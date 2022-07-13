@@ -1,0 +1,82 @@
+Transform: AWS::Serverless-2016-10-31
+
+Resources:
+  Function:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: function
+      Role: !GetAtt Role.Arn
+      Timeout: 10
+      ReservedConcurrentExecutions: 1
+
+      PackageType: Zip
+      CodeUri: build
+      Handler: dist/reactive/index.handler
+      Runtime: nodejs16.x
+
+      Events:
+        TableWrite:
+          Type: DynamoDB
+          Properties:
+            Stream: !GetAtt Table.StreamArn
+            StartingPosition: LATEST
+
+  Table:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: table
+      AttributeDefinitions:
+        - AttributeName: country
+          AttributeType: S
+
+        - AttributeName: state
+          AttributeType: S
+
+      KeySchema:
+        - AttributeName: country
+          KeyType: HASH
+
+        - AttributeName: state
+          KeyType: RANGE
+
+      BillingMode: PAY_PER_REQUEST
+      StreamSpecification:
+        StreamViewType: NEW_AND_OLD_IMAGES
+
+  Role:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: role
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Action: sts:AssumeRole
+            Principal:
+              Service: lambda.amazonaws.com
+
+      Policies:
+        - PolicyName: policy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:GetItem
+                  - dynamodb:Scan
+                  - dynamodb:Query
+                Resource: !GetAtt Table.Arn
+
+              - Effect: Allow
+                Action:
+                  - dynamodb:DescribeStream
+                  - dynamodb:GetRecords
+                  - dynamodb:GetShardIterator
+                  - dynamodb:ListStreams
+                Resource: !GetAtt Table.StreamArn
+                # Condition:
+                #   ArnLike:
+                #     aws:SourceArn: !Sub arn:aws:lambda:${!Ref AWS::Region}:${!Ref AWS::AccountId}:function:function

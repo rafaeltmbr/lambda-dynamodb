@@ -1,0 +1,19 @@
+{
+  "name": "dynamodb-lambda",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "scripts": {
+    "build": "./build.sh",
+    "deploy": "sam deploy --capabilities CAPABILITY_NAMED_IAM",
+    "delete": "sam delete --no-prompts"
+  },
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.101",
+    "@types/node": "^18.0.3",
+    "typescript": "^4.7.4"
+  },
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.128.0"
+  }
+}
